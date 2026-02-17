@@ -1,4 +1,93 @@
 {
   "sent": [],
-  "queue": []
+  "queue": [
+    {
+      "title": "Unlocking merger value through operating model design",
+      "link": "https://www.mckinsey.com/capabilities/m-and-a/our-insights/unlocking-merger-value-through-operating-model-design",
+      "summary": "Mergers represent a rare opportunity to transform an organization’s operating model to achieve strategic objectives and deliver promised value. That requires a thoughtful, leader-driven process.",
+      "published": "2026-02-13T00:00:00+00:00",
+      "source": "mckinsey.com",
+      "estimated_reading_min": 0.1,
+      "reading_time_estimated": false,
+      "reason": "El artículo se centra en el diseño del modelo operativo, esencial para optimizar procesos en producción.",
+      "summary_es": "El artículo explora cómo las fusiones ofrecen una oportunidad única para transformar el modelo operativo de una organización con el fin de alcanzar objetivos estratégicos y generar valor. Destaca la importancia de un proceso consciente y liderado por directivos en este contexto.",
+      "matched_keywords": [
+        "operating model",
+        "strategic objectives",
+        "value delivery",
+        "transformation"
+      ],
+      "queued_at": "2026-02-17T05:07:30.407219"
+    },
+    {
+      "title": "How to Leverage Explainable AI for Better Business Decisions",
+      "link": "https://towardsdatascience.com/how-to-leverage-explainable-ai-for-better-business-decisions/",
+      "summary": "Moving beyond the black box to turn complex model outputs into actionable organizational strategies.\nThe post How to Leverage Explainable AI for Better Business Decisions appeared first on Towards Data Science.",
+      "published": "2026-02-12T15:00:00+00:00",
+      "source": "towardsdatascience.com",
+      "estimated_reading_min": 0.1,
+      "reading_time_estimated": false,
+      "reason": "Ofrece estrategias para integrar AI en la toma de decisiones empresariales, clave en operaciones y gestión de datos.",
+      "summary_es": "El artículo discute cómo utilizar la inteligencia artificial explicable para mejorar las decisiones en las organizaciones. Presenta métodos para convertir los resultados complejos de modelos en estrategias organizacionales prácticas y accesibles.",
+      "matched_keywords": [
+        "data governance",
+        "decision support",
+        "KPI tree",
+        "business intelligence"
+      ],
+      "queued_at": "2026-02-17T05:07:33.003958"
+    },
+    {
+      "title": "The Strangest Bottleneck in Modern LLMs",
+      "link": "https://towardsdatascience.com/the-strangest-bottleneck-in-modern-llms/",
+      "summary": "Why insanely fast GPUs still can’t make LLMs feel instant\nThe post The Strangest Bottleneck in Modern LLMs appeared first on Towards Data Science.",
+      "published": "2026-02-16T11:14:00+00:00",
+      "source": "towardsdatascience.com",
+      "estimated_reading_min": 0.1,
+      "reading_time_estimated": false,
+      "reason": "Aborda un tema relevante sobre cuellos de botella que puede impactar en la eficiencia operativa.",
+      "summary_es": "El artículo 'The Strangest Bottleneck in Modern LLMs' explora por qué, a pesar de contar con GPUs extremadamente rápidas, los modelos de lenguaje todavía enfrentan problemas de latencia que impiden una respuesta instantánea. Esto es relevante para la gestión operativa, ya que entender y solucionar cuellos de botella es crucial para optimizar flujos de trabajo y mejorar el rendimiento general.",
+      "matched_keywords": [
+        "bottleneck",
+        "throughput",
+        "cycle time"
+      ],
+      "queued_at": "2026-02-17T05:07:36.963286"
+    },
+    {
+      "title": "Building an AI Agent to Detect and Handle Anomalies in Time-Series Data",
+      "link": "https://towardsdatascience.com/building-an-ai-agent-to-detect-and-handle-anomalies-in-time-series-data/",
+      "summary": "Combining statistical detection with agentic decision-making\nThe post Building an AI Agent to Detect and Handle Anomalies in Time-Series Data appeared first on Towards Data Science.",
+      "published": "2026-02-11T15:00:00+00:00",
+      "source": "towardsdatascience.com",
+      "estimated_reading_min": 0.1,
+      "reading_time_estimated": false,
+      "reason": "Aborda la detección de anomalías en datos, relevante para operaciones y gestión de datos.",
+      "summary_es": "Este artículo se centra en la creación de un agente de inteligencia artificial capaz de detectar y manejar anomalías en datos de series temporales. Utiliza técnicas de detección estadística combinadas con toma de decisiones automatizada, lo que puede ser crucial para mejorar la calidad de los datos y la eficiencia operativa en una empresa de producción.",
+      "matched_keywords": [
+        "anomalía",
+        "detección",
+        "gestión de datos",
+        "data quality"
+      ],
+      "queued_at": "2026-02-17T05:07:39.630522"
+    },
+    {
+      "title": "What to expect in the global fashion industry in 2026",
+      "link": "https://www.mckinsey.com/industries/retail/our-insights/what-to-expect-in-the-global-fashion-industry-in-2026",
+      "summary": "This year’s dominant themes include agentic AI, the growth of the resale market, the quest for operational efficiency, and strategic renewal in the luxury sector.",
+      "published": "2026-02-11T00:00:00+00:00",
+      "source": "mckinsey.com",
+      "estimated_reading_min": 0.1,
+      "reading_time_estimated": false,
+      "reason": "Aborda la eficiencia operativa y la renovación estratégica, temas clave para la gestión de datos en producción.",
+      "summary_es": "El artículo sobre la industria de la moda en 2026 destaca temas dominantes como la inteligencia artificial, el crecimiento del mercado de reventa y la búsqueda de eficiencia operativa. Estos aspectos reflejan la importancia de adaptar las operaciones y los datos para satisfacer las nuevas demandas del mercado.",
+      "matched_keywords": [
+        "lean",
+        "eficiencia operativa",
+        "estrategia"
+      ],
+      "queued_at": "2026-02-17T05:07:43.324794"
+    }
+  ]
 }
