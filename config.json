@@ -66,8 +66,8 @@
     "https://blog.pragmaticengineer.com/rss/",
     "https://stackoverflow.blog/feed/"
   ],
-  "min_reading_minutes": 3,
-  "max_reading_minutes": 30,
+  "min_reading_minutes": 0,
+  "max_reading_minutes": 60,
   "words_per_minute": 230,
   "lookback_days": 7,
   "max_candidates_to_llm": 30
