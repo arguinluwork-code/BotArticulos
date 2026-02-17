@@ -1,4 +1,4 @@
-anthropic
+openai
 feedparser
 requests
 newspaper3k

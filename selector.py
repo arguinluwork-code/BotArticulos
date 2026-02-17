@@ -2,14 +2,14 @@ import json
 import logging
 import os
 
-import anthropic
+import openai
 
 logger = logging.getLogger(__name__)
 
 
 def select_best_article(candidates: list[dict], keywords: list[str], max_candidates: int = 30) -> dict | None:
     """
-    Use Claude Haiku to select the most relevant article from the candidate list.
+    Use GPT-4o mini to select the most relevant article from the candidate list.
     Returns the selected article dict enriched with: reason, summary_es, matched_keywords.
     Returns None if selection fails or no candidates exist.
     """
@@ -39,16 +39,16 @@ Respondé SOLO con un JSON válido, sin markdown:
 {{"index": <número>, "reason": "<1 línea de por qué>", "summary_es": "<resumen de 2-3 oraciones en español>", "matched_keywords": ["kw1", "kw2"]}}"""
 
     try:
-        client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-        message = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+        client = openai.OpenAI(api_key=os.environ["ANTHROPIC_API_KEY"])
+        message = client.chat.completions.create(
+            model="gpt-4o-mini",
             max_tokens=400,
             messages=[{"role": "user", "content": prompt}],
         )
-        raw = message.content[0].text.strip()
-        logger.debug("Haiku raw response: %s", raw)
+        raw = message.choices[0].message.content.strip()
+        logger.debug("GPT-4o-mini raw response: %s", raw)
     except Exception as exc:
-        logger.error("Claude API call failed: %s", exc)
+        logger.error("OpenAI API call failed: %s", exc)
         return None
 
     try:
@@ -61,15 +61,15 @@ Respondé SOLO con un JSON válido, sin markdown:
             try:
                 result = json.loads(match.group())
             except json.JSONDecodeError:
-                logger.error("Could not parse JSON from Haiku response: %s", raw)
+                logger.error("Could not parse JSON from GPT response: %s", raw)
                 return None
         else:
-            logger.error("No JSON found in Haiku response: %s", raw)
+            logger.error("No JSON found in GPT response: %s", raw)
             return None
 
     idx = result.get("index")
     if idx is None or not isinstance(idx, int) or idx < 0 or idx >= len(pool):
-        logger.error("Invalid index in Haiku response: %s", result)
+        logger.error("Invalid index in GPT response: %s", result)
         return None
 
     selected = pool[idx].copy()

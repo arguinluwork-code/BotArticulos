@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sys
 from datetime import datetime
 
 from feeds import fetch_all_feeds
@@ -90,4 +91,8 @@ def _notify_no_articles() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    if "--listen" in sys.argv:
+        from bot_listener import run_listener
+        run_listener()
+    else:
+        main()
