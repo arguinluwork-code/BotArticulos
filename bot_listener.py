@@ -1,11 +1,14 @@
 """
 bot_listener.py
 Modo interactivo: escucha comandos de Telegram via long-polling.
-Ejecutar localmente con: python bot_listener.py
+Ejecutar localmente con: python main.py --listen
 
 Comandos disponibles:
-  /articulo  — busca y envía el artículo más relevante del día
-  /estado    — muestra cuántos artículos fueron enviados en total
+  /articulo  — envía el próximo artículo de la cola (instantáneo)
+  /siguiente — alias de /articulo
+  /leido     — marca el último artículo enviado como leído y lo saca de la cola
+  /cola      — muestra cuántos artículos hay en cola
+  /estado    — estadísticas generales
   /ayuda     — lista los comandos disponibles
 """
 
@@ -17,9 +20,7 @@ from datetime import datetime
 
 import requests
 
-from feeds import fetch_all_feeds
-from selector import select_best_article
-from telegram_sender import send_article
+from telegram_sender import answer_callback, send_article
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,8 +28,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-POLL_TIMEOUT = 30       # segundos de long-polling por request
-RETRY_SLEEP  = 5        # segundos a esperar si falla getUpdates
+POLL_TIMEOUT = 30
+RETRY_SLEEP  = 5
+
+ALLOWED_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 
 # ---------------------------------------------------------------------------
@@ -63,68 +66,132 @@ def _get_updates(token: str, offset: int) -> list[dict]:
 # State helpers
 # ---------------------------------------------------------------------------
 
-def _load_json(path: str) -> dict:
-    with open(path, encoding="utf-8") as f:
+def _load_state() -> dict:
+    with open("state.json", encoding="utf-8") as f:
         return json.load(f)
 
 
-def _save_json(path: str, data: dict) -> None:
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+def _save_state(state: dict) -> None:
+    with open("state.json", "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2, ensure_ascii=False)
+
+
+def _load_config() -> dict:
+    with open("config.json", encoding="utf-8") as f:
+        return json.load(f)
 
 
 # ---------------------------------------------------------------------------
 # Command handlers
 # ---------------------------------------------------------------------------
 
-def _handle_articulo(token: str, chat_id: int | str, config: dict) -> None:
-    """Fetch feeds, select best article, send it, update state."""
-    _send_text(token, chat_id, "🔍 Buscando el mejor artículo… puede tardar un minuto.")
+def _handle_articulo(token: str, chat_id: int | str) -> None:
+    """Saca el primer artículo de la cola y lo envía. Instantáneo."""
+    state = _load_state()
+    queue: list = state.setdefault("queue", [])
 
-    state = _load_json("state.json")
-
-    candidates = fetch_all_feeds(config, state)
-    logger.info("Candidates found: %d", len(candidates))
-
-    if not candidates:
-        _send_text(token, chat_id, "⚠️ No encontré artículos candidatos en este momento. Probá de nuevo más tarde.")
+    if not queue:
+        _send_text(
+            token, chat_id,
+            "📭 La cola está vacía. El bot la rellena automáticamente cada día.\n"
+            "Si querés forzar la recarga usá /recargar."
+        )
         return
 
-    selected = select_best_article(
-        candidates,
-        config["keywords"],
-        max_candidates=config.get("max_candidates_to_llm", 30),
+    article = queue[0]  # no lo sacamos aún — se saca con /leido
+
+    # Marcamos cuándo fue enviado
+    article["sent_at"] = datetime.now().isoformat()
+    _save_state(state)
+
+    send_article(article, token, str(chat_id))
+
+    remaining = len(queue) - 1
+    _send_text(
+        token, chat_id,
+        f"📬 Quedan <b>{remaining}</b> artículo(s) en cola.\n"
+        f"Usá /leido cuando termines de leerlo para pasar al siguiente."
     )
+    logger.info("Sent from queue: %s (%d remaining)", article["title"], remaining)
 
-    if not selected:
-        _send_text(token, chat_id, "⚠️ No pude seleccionar un artículo. Intentá de nuevo.")
+
+def _handle_leido(token: str, chat_id: int | str) -> None:
+    """Marca el primer artículo de la cola como leído y lo archiva en sent."""
+    state = _load_state()
+    queue: list = state.setdefault("queue", [])
+    sent: list  = state.setdefault("sent", [])
+
+    if not queue:
+        _send_text(token, chat_id, "ℹ️ No hay artículo pendiente de marcar como leído.")
         return
 
-    logger.info("Selected: %s", selected["title"])
-    send_article(selected, token, str(chat_id))
-
-    # Update state
-    state.setdefault("sent", []).append({
-        "link": selected["link"],
-        "title": selected["title"],
-        "date": selected.get("published", ""),
-        "sent_at": datetime.now().isoformat(),
+    article = queue.pop(0)
+    sent.append({
+        "link":    article["link"],
+        "title":   article["title"],
+        "date":    article.get("published", ""),
+        "sent_at": article.get("sent_at", datetime.now().isoformat()),
+        "read_at": datetime.now().isoformat(),
     })
-    state["sent"] = state["sent"][-200:]
-    _save_json("state.json", state)
-    logger.info("State updated.")
+    state["sent"] = sent[-200:]
+    _save_state(state)
+
+    remaining = len(queue)
+    _send_text(
+        token, chat_id,
+        f"✅ <i>{article['title']}</i>\nmarcado como leído.\n\n"
+        f"📬 Quedan <b>{remaining}</b> artículo(s) en cola."
+        + ("\n\nUsá /articulo para el siguiente." if remaining else
+           "\n\n⚠️ Cola vacía. El bot la rellena mañana automáticamente.")
+    )
+    logger.info("Marked as read: %s (%d remaining in queue)", article["title"], remaining)
+
+
+def _handle_recargar(token: str, chat_id: int | str, config: dict) -> None:
+    """Fuerza una recarga de la cola ahora mismo (puede tardar ~1 min)."""
+    _send_text(token, chat_id, "🔄 Recargando cola… puede tardar un minuto.")
+    from main import refill_queue
+    state = _load_state()
+    added = refill_queue(config, state)
+    state["sent"] = state.get("sent", [])[-200:]
+    _save_state(state)
+    queue_len = len(state.get("queue", []))
+    if added:
+        _send_text(
+            token, chat_id,
+            f"✅ Se agregaron <b>{added}</b> artículo(s) a la cola.\n"
+            f"Total en cola: <b>{queue_len}</b>.\nUsá /articulo para leer."
+        )
+    else:
+        _send_text(token, chat_id, "⚠️ No se encontraron artículos nuevos para agregar a la cola.")
+
+
+def _handle_cola(token: str, chat_id: int | str) -> None:
+    """Muestra los títulos en cola."""
+    state = _load_state()
+    queue: list = state.get("queue", [])
+
+    if not queue:
+        _send_text(token, chat_id, "📭 La cola está vacía.")
+        return
+
+    lines = [f"📋 <b>Cola de artículos ({len(queue)})</b>\n"]
+    for i, art in enumerate(queue, 1):
+        lines.append(f"{i}. <i>{art['title']}</i> — {art.get('source', '')}")
+    _send_text(token, chat_id, "\n".join(lines))
 
 
 def _handle_estado(token: str, chat_id: int | str) -> None:
-    """Report how many articles have been sent so far."""
-    state = _load_json("state.json")
-    count = len(state.get("sent", []))
-    last = state["sent"][-1]["title"] if count else "—"
+    state = _load_state()
+    sent  = state.get("sent", [])
+    queue = state.get("queue", [])
+    last  = sent[-1]["title"] if sent else "—"
     _send_text(
         token, chat_id,
         f"📊 <b>Estado del bot</b>\n\n"
-        f"📬 Artículos enviados: <b>{count}</b>\n"
-        f"📄 Último: <i>{last}</i>",
+        f"📬 Artículos leídos: <b>{len(sent)}</b>\n"
+        f"📋 En cola: <b>{len(queue)}</b>\n"
+        f"📄 Último leído: <i>{last}</i>",
     )
 
 
@@ -132,30 +199,33 @@ def _handle_ayuda(token: str, chat_id: int | str) -> None:
     _send_text(
         token, chat_id,
         "🤖 <b>Daily Article Bot — Comandos</b>\n\n"
-        "/articulo — Busca y envía el artículo más relevante ahora\n"
-        "/estado   — Muestra estadísticas del bot\n"
-        "/ayuda    — Muestra este mensaje",
+        "/articulo  — Envía el próximo artículo de la cola\n"
+        "/leido     — Marca el artículo actual como leído\n"
+        "/cola      — Ver artículos en cola\n"
+        "/recargar  — Forzar recarga de la cola ahora\n"
+        "/estado    — Estadísticas generales\n"
+        "/ayuda     — Este mensaje",
     )
+
+
+# ---------------------------------------------------------------------------
+# Auth
+# ---------------------------------------------------------------------------
+
+def _is_authorized(chat_id: int | str) -> bool:
+    return str(chat_id) == str(ALLOWED_CHAT_ID)
 
 
 # ---------------------------------------------------------------------------
 # Main polling loop
 # ---------------------------------------------------------------------------
 
-ALLOWED_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
-
-
-def _is_authorized(chat_id: int | str) -> bool:
-    """Only respond to the configured chat ID to avoid abuse."""
-    return str(chat_id) == str(ALLOWED_CHAT_ID)
-
-
 def run_listener() -> None:
-    token = os.environ["TELEGRAM_BOT_TOKEN"]
-    config = _load_json("config.json")
+    token  = os.environ["TELEGRAM_BOT_TOKEN"]
+    config = _load_config()
 
     logger.info("Bot listener started. Waiting for commands…")
-    _send_text(token, ALLOWED_CHAT_ID, "✅ Bot iniciado. Usá /ayuda para ver los comandos disponibles.")
+    _send_text(token, ALLOWED_CHAT_ID, "✅ Bot iniciado. Usá /ayuda para ver los comandos.")
 
     offset = 0
 
@@ -165,30 +235,61 @@ def run_listener() -> None:
         for update in updates:
             offset = update["update_id"] + 1
 
+            # --- Botón pulsado (inline keyboard) ---
+            if "callback_query" in update:
+                cq      = update["callback_query"]
+                cq_id   = cq["id"]
+                chat_id = cq["message"]["chat"]["id"]
+                data    = cq.get("data", "")
+
+                if not _is_authorized(chat_id):
+                    answer_callback(token, cq_id, "⛔ No autorizado.")
+                    continue
+
+                logger.info("Callback: %r from chat_id=%s", data, chat_id)
+
+                if data == "leido":
+                    answer_callback(token, cq_id, "✅ Marcado como leído")
+                    _handle_leido(token, chat_id)
+                elif data == "cola":
+                    answer_callback(token, cq_id)
+                    _handle_cola(token, chat_id)
+                elif data == "articulo":
+                    answer_callback(token, cq_id)
+                    _handle_articulo(token, chat_id)
+                else:
+                    answer_callback(token, cq_id, "❓ Acción desconocida.")
+                continue
+
+            # --- Mensaje de texto normal ---
             message = update.get("message") or update.get("edited_message")
             if not message:
                 continue
 
             chat_id = message["chat"]["id"]
-            text = (message.get("text") or "").strip()
+            text    = (message.get("text") or "").strip()
 
             if not _is_authorized(chat_id):
-                logger.warning("Unauthorized chat_id=%s tried to use the bot.", chat_id)
+                logger.warning("Unauthorized chat_id=%s", chat_id)
                 continue
 
             logger.info("Received: %r from chat_id=%s", text, chat_id)
-
             cmd = text.split()[0].lower().split("@")[0] if text else ""
 
-            if cmd == "/articulo":
-                _handle_articulo(token, chat_id, config)
+            if cmd in ("/articulo", "/siguiente"):
+                _handle_articulo(token, chat_id)
+            elif cmd == "/leido":
+                _handle_leido(token, chat_id)
+            elif cmd == "/recargar":
+                _handle_recargar(token, chat_id, config)
+            elif cmd == "/cola":
+                _handle_cola(token, chat_id)
             elif cmd == "/estado":
                 _handle_estado(token, chat_id)
             elif cmd in ("/ayuda", "/start", "/help"):
                 _handle_ayuda(token, chat_id)
-            else:
-                if text.startswith("/"):
-                    _send_text(token, chat_id, "❓ Comando no reconocido. Usá /ayuda.")
+            elif text.startswith("/"):
+                _send_text(token, chat_id, "❓ Comando no reconocido. Usá /ayuda.")
 
 
 if __name__ == "__main__":
