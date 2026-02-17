@@ -20,6 +20,7 @@ from datetime import datetime
 
 import requests
 
+from github_state import load_state, save_state
 from telegram_sender import answer_callback, send_article
 
 logging.basicConfig(
@@ -63,17 +64,15 @@ def _get_updates(token: str, offset: int) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# State helpers
+# State helpers — delegados a github_state (GitHub API o local)
 # ---------------------------------------------------------------------------
 
 def _load_state() -> dict:
-    with open("state.json", encoding="utf-8") as f:
-        return json.load(f)
+    return load_state()
 
 
 def _save_state(state: dict) -> None:
-    with open("state.json", "w", encoding="utf-8") as f:
-        json.dump(state, f, indent=2, ensure_ascii=False)
+    save_state(state)
 
 
 def _load_config() -> dict:
