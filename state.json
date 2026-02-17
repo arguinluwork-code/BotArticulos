@@ -1,25 +1,14 @@
 {
-  "sent": [],
-  "queue": [
+  "sent": [
     {
-      "title": "Unlocking merger value through operating model design",
       "link": "https://www.mckinsey.com/capabilities/m-and-a/our-insights/unlocking-merger-value-through-operating-model-design",
-      "summary": "Mergers represent a rare opportunity to transform an organization’s operating model to achieve strategic objectives and deliver promised value. That requires a thoughtful, leader-driven process.",
-      "published": "2026-02-13T00:00:00+00:00",
-      "source": "mckinsey.com",
-      "estimated_reading_min": 0.1,
-      "reading_time_estimated": false,
-      "reason": "El artículo se centra en el diseño del modelo operativo, esencial para optimizar procesos en producción.",
-      "summary_es": "El artículo explora cómo las fusiones ofrecen una oportunidad única para transformar el modelo operativo de una organización con el fin de alcanzar objetivos estratégicos y generar valor. Destaca la importancia de un proceso consciente y liderado por directivos en este contexto.",
-      "matched_keywords": [
-        "operating model",
-        "strategic objectives",
-        "value delivery",
-        "transformation"
-      ],
-      "queued_at": "2026-02-17T05:07:30.407219",
-      "sent_at": "2026-02-17T05:08:54.172474"
-    },
+      "title": "Unlocking merger value through operating model design",
+      "date": "2026-02-13T00:00:00+00:00",
+      "sent_at": "2026-02-17T05:08:54.172474",
+      "read_at": "2026-02-17T05:15:22.286598"
+    }
+  ],
+  "queue": [
     {
       "title": "How to Leverage Explainable AI for Better Business Decisions",
       "link": "https://towardsdatascience.com/how-to-leverage-explainable-ai-for-better-business-decisions/",
