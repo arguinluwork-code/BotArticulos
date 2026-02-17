@@ -1,9 +1,13 @@
 import logging
+import warnings
 from datetime import datetime, timezone, timedelta
 from urllib.parse import urlparse
 
 import feedparser
 import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+warnings.filterwarnings("ignore", category=InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +84,7 @@ def fetch_all_feeds(config: dict, state: dict) -> list[dict]:
 
     for feed_url in config["feeds"]:
         try:
-            response = requests.get(feed_url, headers=HEADERS, timeout=15)
+            response = requests.get(feed_url, headers=HEADERS, timeout=15, verify=False)
             response.raise_for_status()
             feed = feedparser.parse(response.content)
         except Exception as exc:
