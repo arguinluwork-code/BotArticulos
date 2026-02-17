@@ -25,7 +25,8 @@
         "KPI tree",
         "business intelligence"
       ],
-      "queued_at": "2026-02-17T05:07:33.003958"
+      "queued_at": "2026-02-17T05:07:33.003958",
+      "sent_at": "2026-02-17T05:15:51.058489"
     },
     {
       "title": "The Strangest Bottleneck in Modern LLMs",
